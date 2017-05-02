@@ -79,7 +79,7 @@ func ToURLValues(v interface{}) (url.Values, error) {
 				vIface := value.Interface()
 				innerValueMap, err := ToURLValues(vIface)
 				if err == nil && innerValueMap == nil {
-					if !isBlank(vIface) {
+					if !isBlankReflectValue(value) && !isBlank(vIface) {
 						keyname := strings.Join([]string{jsonTag, fmt.Sprintf("%v", key)}, ".")
 						fullMap.Add(keyname, fmt.Sprintf("%v", vIface))
 					}
@@ -103,7 +103,7 @@ func ToURLValues(v interface{}) (url.Values, error) {
 				fIface := ffield.Interface()
 				innerValueMap, err := ToURLValues(fIface)
 				if err == nil && innerValueMap == nil {
-					if !isBlank(fIface) {
+					if !isBlankReflectValue(ffield) && !isBlank(fIface) {
 						fullMap.Add(keyname, fmt.Sprintf("%v", fIface))
 					}
 					continue
@@ -117,7 +117,7 @@ func ToURLValues(v interface{}) (url.Values, error) {
 
 		default:
 			aIface := fieldVal.Interface()
-			if !isBlank(aIface) {
+			if !isBlankReflectValue(fieldVal) && !isBlank(aIface) {
 				keyname := jsonTag
 				fullMap[keyname] = append(fullMap[keyname], fmt.Sprintf("%v", aIface))
 			}
@@ -131,6 +131,9 @@ func toURLValuesForSlice(v interface{}) (url.Values, error) {
 	val := reflect.ValueOf(v)
 	n := val.Len()
 	finalValues := make(url.Values)
+	if val.Len() < 1 {
+		return nil, nil
+	}
 
 	sliceValues := val.Slice(0, val.Len())
 	for i := 0; i < n; i++ {
@@ -159,7 +162,7 @@ func toURLValuesForMap(v interface{}) (url.Values, error) {
 		keyname := fmt.Sprintf("%v", key)
 		innerValueMap, err := ToURLValues(vIface)
 		if err == nil && innerValueMap == nil {
-			if !isBlank(vIface) {
+			if !isBlankReflectValue(value) && !isBlank(vIface) {
 				fullMap.Add(keyname, fmt.Sprintf("%v", vIface))
 			}
 			continue
@@ -182,6 +185,15 @@ func isBlank(v interface{}) bool {
 	switch v {
 	case "", nil:
 		return true
+	default:
+		return false
+	}
+}
+
+func isBlankReflectValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Array, reflect.Slice:
+		return v.Len() < 1
 	default:
 		return false
 	}
