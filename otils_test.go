@@ -105,3 +105,24 @@ type Request struct {
 	Logo   *Logo  `json:"logo"`
 	Source string `json:"source"`
 }
+
+func TestFirstNonEmptyString(t *testing.T) {
+	tests := [...]struct {
+		args []string
+		want string
+	}{
+		0: {args: []string{"     ", "", "a", "b"}, want: "a"},
+		1: {args: []string{""}, want: ""},
+		2: {args: []string{"", " "}, want: ""},
+		3: {args: []string{"ABC", "DEF", " "}, want: "ABC"},
+		4: {args: []string{"", " DEF ", " "}, want: " DEF "},
+	}
+
+	for i, tt := range tests {
+		got := otils.FirstNonEmptyString(tt.args...)
+		want := tt.want
+		if got != want {
+			t.Errorf("#%d got=%q want=%q", i, got, want)
+		}
+	}
+}
