@@ -1,11 +1,13 @@
 package otils
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -279,4 +281,60 @@ func MakeCodedError(msg string, code int) *CodedError {
 		msg:  msg,
 		code: code,
 	}
+}
+
+// NullableString represents a string that is sent
+// back by some APIs as null, in JSON unquoted which
+// makes them un-unmarshalable in Go.
+// NullableString interprets null as "".
+type NullableString string
+
+var _ json.Unmarshaler = (*NullableString)(nil)
+
+func (ns *NullableString) UnmarshalJSON(b []byte) error {
+	str := string(b)
+	// Special case when we encounter `null`, modify it to the empty string
+	if str == "null" {
+		str = ""
+	} else {
+		unquoted, err := strconv.Unquote(str)
+		if err != nil {
+			return err
+		}
+		*ns = NullableString(unquoted)
+	}
+
+	return nil
+}
+
+type NullableFloat64 float64
+
+var _ json.Unmarshaler = (*NullableFloat64)(nil)
+
+func (nf64 *NullableFloat64) UnmarshalJSON(b []byte) error {
+	str := string(b)
+	f64, err := strconv.ParseFloat(str, 64)
+	if err == nil {
+		*nf64 = NullableFloat64(f64)
+		return nil
+	}
+
+	// Otherwise trying checking if it was null
+	var ns NullableString
+	if err := json.Unmarshal(b, &ns); err != nil {
+		return err
+	}
+
+	if ns == "" {
+		*nf64 = 0.0
+		return nil
+	}
+
+	f64, err = strconv.ParseFloat(str, 64)
+	if err != nil {
+		return err
+	}
+
+	*nf64 = NullableFloat64(f64)
+	return nil
 }
