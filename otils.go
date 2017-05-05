@@ -254,3 +254,29 @@ func FirstNonEmptyString(args ...string) string {
 	}
 	return ""
 }
+
+type CodedError struct {
+	code int
+	msg  string
+}
+
+func (cerr *CodedError) Error() string {
+	if cerr == nil {
+		return ""
+	}
+	return cerr.msg
+}
+
+func (cerr *CodedError) Code() int {
+	if cerr == nil {
+		return http.StatusOK
+	}
+	return cerr.code
+}
+
+func MakeCodedError(msg string, code int) *CodedError {
+	return &CodedError{
+		msg:  msg,
+		code: code,
+	}
+}

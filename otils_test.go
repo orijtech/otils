@@ -126,3 +126,36 @@ func TestFirstNonEmptyString(t *testing.T) {
 		}
 	}
 }
+
+func TestCodedError(t *testing.T) {
+	// No panics expected
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("unexpected panic: %#v", r)
+		}
+	}()
+
+	tests := [...]struct {
+		err  *otils.CodedError
+		msg  string
+		code int
+	}{
+		0: {otils.MakeCodedError("200 OK", 200), "200 OK", 200},
+		1: {otils.MakeCodedError("failed to find it", 404), "failed to find it", 404},
+
+		// nil CodedError should not panic and should return 200 values.
+		2: {nil, "", 200},
+	}
+
+	for i, tt := range tests {
+		gotCode, wantCode := tt.err.Code(), tt.code
+		if gotCode != wantCode {
+			t.Errorf("#%d gotCode=%v wantCode=%v", i, gotCode, wantCode)
+		}
+
+		gotMsg, wantMsg := tt.err.Error(), tt.msg
+		if gotMsg != wantMsg {
+			t.Errorf("#%d gotMsg=%v wantMsg=%v", i, gotMsg, wantMsg)
+		}
+	}
+}
