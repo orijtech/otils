@@ -338,3 +338,28 @@ func (nf64 *NullableFloat64) UnmarshalJSON(b []byte) error {
 	*nf64 = NullableFloat64(f64)
 	return nil
 }
+
+type NumericBool bool
+
+func (nb *NumericBool) UnmarshalJSON(blob []byte) error {
+	if len(blob) < 1 {
+		*nb = false
+		return nil
+	}
+
+	s := string(blob)
+	// Try first parsing an integer.
+	pBool, err := strconv.ParseBool(s)
+	if err == nil {
+		*nb = NumericBool(pBool)
+		return nil
+	}
+
+	pInt, err := strconv.ParseInt(s, 10, 32)
+	if err != nil {
+		*nb = pInt != 0
+		return nil
+	}
+
+	return err
+}

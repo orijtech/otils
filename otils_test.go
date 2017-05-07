@@ -1,6 +1,7 @@
 package otils_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/orijtech/otils"
@@ -156,6 +157,42 @@ func TestCodedError(t *testing.T) {
 		gotMsg, wantMsg := tt.err.Error(), tt.msg
 		if gotMsg != wantMsg {
 			t.Errorf("#%d gotMsg=%v wantMsg=%v", i, gotMsg, wantMsg)
+		}
+	}
+}
+
+func TestNumericBool(t *testing.T) {
+	tests := [...]struct {
+		str     string
+		want    otils.NumericBool
+		wantErr bool
+	}{
+		0: {str: "1", want: otils.NumericBool(true)},
+		1: {str: "0", want: otils.NumericBool(false)},
+		2: {str: "true", want: otils.NumericBool(true)},
+		3: {str: "false", want: otils.NumericBool(false)},
+		4: {str: "ping", wantErr: true},
+	}
+
+	for i, tt := range tests {
+		var nb otils.NumericBool
+		err := json.Unmarshal([]byte(tt.str), &nb)
+
+		if tt.wantErr {
+			if err == nil {
+				t.Errorf("#%d: expecting non-nil error", i)
+			}
+			continue
+		}
+
+		if err != nil {
+			t.Errorf("#%d: err: %v", i, err)
+			continue
+		}
+
+		got, want := nb, tt.want
+		if got != want {
+			t.Errorf("#%d got=%v want=%v", i, got, want)
 		}
 	}
 }
