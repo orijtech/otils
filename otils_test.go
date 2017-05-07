@@ -26,7 +26,7 @@ func TestToURLValues(t *testing.T) {
 					},
 				},
 			},
-			want: "logo.dimension.extra.shade=45%25&logo.dimension.extra.zoom=false&logo.dimension.height=120&logo.dimension.width=100&logo.url=https%3A%2F%2Forijtech.com%2Ffavicon.ico&source=https%3A%2F%2Forijtech.com",
+			want: "logo.dimension.extra.shade=45%25&logo.dimension.height=120&logo.dimension.width=100&logo.url=https%3A%2F%2Forijtech.com%2Ffavicon.ico&source=https%3A%2F%2Forijtech.com",
 		},
 
 		1: {
@@ -51,7 +51,7 @@ func TestToURLValues(t *testing.T) {
 					},
 				},
 			},
-			want: "logo.dimension.extra.shade=0%25&logo.dimension.extra.zoom=false&logo.dimension.height=120&logo.dimension.width=100&logo.url=https%3A%2F%2Forijtech.com%2Ffavicon.ico",
+			want: "logo.dimension.extra.shade=0%25&logo.dimension.height=120&logo.dimension.width=100&logo.url=https%3A%2F%2Forijtech.com%2Ffavicon.ico",
 		},
 
 		4: {
@@ -70,6 +70,21 @@ func TestToURLValues(t *testing.T) {
 		6: {
 			v:       func() int { return 2 },
 			mustErr: true,
+		},
+
+		7: {
+			v:    &Query{Nested: true, Page: 0},
+			want: "nested=true&page=0",
+		},
+
+		8: {
+			v:    &Query{Nested: false, Page: 0},
+			want: "page=0",
+		},
+
+		9: {
+			v:    &Query{Nested: false, Page: 2},
+			want: "page=2",
 		},
 	}
 
@@ -95,6 +110,11 @@ type Dimension struct {
 	Height int `json:"height"`
 
 	Extra map[string]interface{} `json:"extra,omitempty"`
+}
+
+type Query struct {
+	Nested bool  `json:"nested"`
+	Page   int64 `json:"page"`
 }
 
 type Logo struct {

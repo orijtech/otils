@@ -185,7 +185,7 @@ func toURLValuesForMap(v interface{}) (url.Values, error) {
 //  * `value=null`
 func isBlank(v interface{}) bool {
 	switch v {
-	case "", nil:
+	case "", nil, false:
 		return true
 	default:
 		return false
