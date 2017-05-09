@@ -3,6 +3,7 @@ package otils_test
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/orijtech/otils"
 )
@@ -213,6 +214,44 @@ func TestNumericBool(t *testing.T) {
 		got, want := nb, tt.want
 		if got != want {
 			t.Errorf("#%d got=%v want=%v", i, got, want)
+		}
+	}
+}
+
+func TestNullableTime(t *testing.T) {
+	tests := [...]struct {
+		str     string
+		want    otils.NullableTime
+		wantErr bool
+	}{
+		0: {str: "", wantErr: true},
+		1: {str: "0", wantErr: true},
+		2: {
+			str:  `"2006-01-02T15:04:05Z"`,
+			want: otils.NullableTime(time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC)),
+		},
+		3: {str: "ping", wantErr: true},
+	}
+
+	for i, tt := range tests {
+		var nt otils.NullableTime
+		err := json.Unmarshal([]byte(tt.str), &nt)
+
+		if tt.wantErr {
+			if err == nil {
+				t.Errorf("#%d: expecting non-nil error", i)
+			}
+			continue
+		}
+
+		if err != nil {
+			t.Errorf("#%d: err: %v", i, err)
+			continue
+		}
+
+		tGot, tWant := time.Time(nt), time.Time(tt.want)
+		if !tGot.Equal(tWant) {
+			t.Errorf("#%d got=%v want=%v", i, tGot, tWant)
 		}
 	}
 }

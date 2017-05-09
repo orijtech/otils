@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ToURLValues transforms any type with fields into a url.Values map
@@ -294,7 +295,7 @@ var _ json.Unmarshaler = (*NullableString)(nil)
 func (ns *NullableString) UnmarshalJSON(b []byte) error {
 	str := string(b)
 	// Special case when we encounter `null`, modify it to the empty string
-	if str == "null" {
+	if str == "null" || str == "" {
 		str = ""
 	} else {
 		unquoted, err := strconv.Unquote(str)
@@ -362,4 +363,29 @@ func (nb *NumericBool) UnmarshalJSON(blob []byte) error {
 	}
 
 	return err
+}
+
+type NullableTime time.Time
+
+var _ json.Unmarshaler = (*NullableTime)(nil)
+
+func (nt *NullableTime) UnmarshalJSON(b []byte) error {
+	var ns NullableString
+	if err := json.Unmarshal(b, &ns); err != nil {
+		return err
+	}
+	if ns == "" {
+		nt = nil
+		return nil
+	}
+
+	// To parse the time, we need to quote the value
+	quotedStr := strconv.Quote(string(ns))
+	t := new(time.Time)
+	if err := json.Unmarshal([]byte(quotedStr), t); err != nil {
+		return err
+	}
+
+	*nt = NullableTime(*t)
+	return nil
 }
