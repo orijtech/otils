@@ -71,7 +71,10 @@ func ToURLValues(v interface{}) (url.Values, error) {
 
 		fieldTyp := typ.Field(i)
 
-		jsonTag := firstJSONTag(fieldTyp)
+		parentTag, omitempty, ignore := jsonTag(fieldTyp)
+		if ignore {
+			continue
+		}
 
 		switch fieldVal.Kind() {
 		case reflect.Map:
@@ -82,15 +85,21 @@ func ToURLValues(v interface{}) (url.Values, error) {
 				vIface := value.Interface()
 				innerValueMap, err := ToURLValues(vIface)
 				if err == nil && innerValueMap == nil {
-					if !isBlankReflectValue(value) && !isBlank(vIface) {
-						keyname := strings.Join([]string{jsonTag, fmt.Sprintf("%v", key)}, ".")
+					zeroValue := reflect.Zero(value.Type())
+					blank := isBlank(vIface) || isBlankReflectValue(value) || reflect.DeepEqual(zeroValue.Interface(), vIface)
+
+					if omitempty && blank {
+						continue
+					}
+					if !blank {
+						keyname := strings.Join([]string{parentTag, fmt.Sprintf("%v", key)}, ".")
 						fullMap.Add(keyname, fmt.Sprintf("%v", vIface))
 					}
 					continue
 				}
 
 				for key, innerValueList := range innerValueMap {
-					keyname := strings.Join([]string{jsonTag, key}, ".")
+					keyname := strings.Join([]string{parentTag, key}, ".")
 					fullMap[keyname] = append(fullMap[keyname], innerValueList...)
 				}
 			}
@@ -101,12 +110,21 @@ func ToURLValues(v interface{}) (url.Values, error) {
 			for i := 0; i < n; i++ {
 				ffield := fieldVal.Field(i)
 				fTyp := typ.Field(i)
-				keyname := strings.Join([]string{jsonTag, firstJSONTag(fTyp)}, ".")
+				tag, omitempty, ignore := jsonTag(fTyp)
+				if ignore {
+					continue
+				}
+				keyname := strings.Join([]string{parentTag, tag}, ".")
 
 				fIface := ffield.Interface()
 				innerValueMap, err := ToURLValues(fIface)
 				if err == nil && innerValueMap == nil {
-					if !isBlankReflectValue(ffield) && !isBlank(fIface) {
+					zeroValue := reflect.Zero(ffield.Type())
+					blank := isBlank(fIface) || isBlankReflectValue(ffield) || reflect.DeepEqual(zeroValue.Interface(), fIface)
+					if omitempty && blank {
+						continue
+					}
+					if !blank {
 						fullMap.Add(keyname, fmt.Sprintf("%v", fIface))
 					}
 					continue
@@ -120,8 +138,10 @@ func ToURLValues(v interface{}) (url.Values, error) {
 
 		default:
 			aIface := fieldVal.Interface()
-			if !isBlankReflectValue(fieldVal) && !isBlank(aIface) {
-				keyname := jsonTag
+			zeroValue := reflect.Zero(fieldVal.Type())
+			blank := isBlank(aIface) || isBlankReflectValue(fieldVal) || reflect.DeepEqual(zeroValue.Interface(), aIface)
+			if !blank {
+				keyname := parentTag
 				fullMap[keyname] = append(fullMap[keyname], fmt.Sprintf("%v", aIface))
 			}
 		}
@@ -204,17 +224,25 @@ func isBlankReflectValue(v reflect.Value) bool {
 
 var errInvalidValue = errors.New("invalid value")
 
-func firstJSONTag(v reflect.StructField) string {
-	jsonTag := v.Tag.Get("json")
-	if jsonTag == "" {
-		jsonTag = v.Name
-	} else {
-		// In the case that we have say `json:"name,omitempty"`
-		// we only want "name" as the tag, the rest
-		splits := strings.Split(jsonTag, ",")
-		jsonTag = splits[0]
+func jsonTag(v reflect.StructField) (tag string, omitempty, ignore bool) {
+	tag = v.Tag.Get("json")
+	if tag == "" {
+		return v.Name, false, false
 	}
-	return jsonTag
+
+	splits := strings.Split(tag, ",")
+	if len(splits) == 0 {
+		return "", false, false
+	}
+	tag, instrs := splits[0], splits[1:]
+	instrIndex := make(map[string]bool)
+	for _, instr := range instrs {
+		instrIndex[instr] = true
+	}
+
+	_, omitempty = instrIndex["omitempty"]
+	_, ignore = instrIndex["-"]
+	return tag, omitempty, ignore || tag == "-"
 }
 
 // RedirectAllTrafficTo creates a handler that can be attached

@@ -46,6 +46,8 @@ func TestToURLValues(t *testing.T) {
 					URL: "https://orijtech.com/favicon.ico",
 					Dimensions: &Dimension{
 						Width: 100, Height: 120,
+						BasicName: "flux",
+						Inner:     &Dimension{Width: 120, Height: 240},
 						Extra: map[string]interface{}{
 							"zoom": false, "shade": "0%",
 						},
@@ -75,12 +77,12 @@ func TestToURLValues(t *testing.T) {
 
 		7: {
 			v:    &Query{Nested: true, Page: 0},
-			want: "nested=true&page=0",
+			want: "nested=true",
 		},
 
 		8: {
 			v:    &Query{Nested: false, Page: 0},
-			want: "page=0",
+			want: "",
 		},
 
 		9: {
@@ -107,8 +109,10 @@ func TestToURLValues(t *testing.T) {
 }
 
 type Dimension struct {
-	Width  int `json:"width"`
-	Height int `json:"height"`
+	Width     int        `json:"width"`
+	Height    int        `json:"height"`
+	BasicName string     `json:"-"`
+	Inner     *Dimension `json:"-"`
 
 	Extra map[string]interface{} `json:"extra,omitempty"`
 }
