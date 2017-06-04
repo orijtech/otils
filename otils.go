@@ -342,6 +342,13 @@ var _ json.Unmarshaler = (*NullableFloat64)(nil)
 
 func (nf64 *NullableFloat64) UnmarshalJSON(b []byte) error {
 	str := string(b)
+	if strings.HasPrefix(str, "\"") {
+		unquoted, err := strconv.Unquote(str)
+		if err == nil {
+			str = unquoted
+		}
+	}
+
 	f64, err := strconv.ParseFloat(str, 64)
 	if err == nil {
 		*nf64 = NullableFloat64(f64)

@@ -1,6 +1,7 @@
 package otils_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 	"time"
@@ -258,4 +259,52 @@ func TestNullableTime(t *testing.T) {
 			t.Errorf("#%d got=%v want=%v", i, tGot, tWant)
 		}
 	}
+}
+
+func TestNullableFloat64(t *testing.T) {
+	tests := [...]struct {
+		str     string
+		wantErr bool
+		want    otils.NullableFloat64
+	}{
+		0: {
+			str: "", wantErr: true,
+		},
+		1: {
+			str: `"-5.7"`, want: -5.7,
+		},
+		2: {
+			str: `"00010.9"`, want: 10.9,
+		},
+		3: {
+			str: `null`, want: 0,
+		},
+	}
+
+	for i, tt := range tests {
+		var recv otils.NullableFloat64
+		err := json.Unmarshal([]byte(tt.str), &recv)
+		if tt.wantErr {
+			if err == nil {
+				t.Errorf("#%d: expected a non-nil error", i)
+			}
+			continue
+		}
+
+		if err != nil {
+			t.Errorf("#%d: gotErr=%v", i, err)
+			continue
+		}
+
+		// Compare by JSON repr
+		gotBytes, wantBytes := jsonify(recv), jsonify(tt.want)
+		if !bytes.Equal(gotBytes, wantBytes) {
+			t.Errorf("#%d:\ngot: %s\nwant:%s", i, gotBytes, wantBytes)
+		}
+	}
+}
+
+func jsonify(v interface{}) []byte {
+	blob, _ := json.MarshalIndent(v, "", "  ")
+	return blob
 }
