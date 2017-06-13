@@ -3,6 +3,9 @@ package otils_test
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -307,4 +310,49 @@ func TestNullableFloat64(t *testing.T) {
 func jsonify(v interface{}) []byte {
 	blob, _ := json.MarshalIndent(v, "", "  ")
 	return blob
+}
+
+func TestCORSMiddleware(t *testing.T) {
+	tests := [...]struct {
+		cors *otils.CORS
+		want http.Header
+	}{
+		0: {want: nil},
+		1: {
+			cors: &otils.CORS{
+				Headers: []string{"X-Preflight"},
+				Methods: []string{"POST", "GET"},
+			}, want: http.Header{
+				"Access-Control-Allow-Methods": []string{"POST", "GET"},
+				"Access-Control-Allow-Headers": []string{"X-Preflight"},
+			},
+		},
+		2: {
+			cors: &otils.CORS{
+				Methods: []string{"POST", "DELETE"},
+			}, want: http.Header{
+				"Access-Control-Allow-Methods": []string{"POST", "DELETE"},
+			},
+		},
+	}
+
+	for i, tt := range tests {
+		handler := otils.CORSMiddleware(tt.cors, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("Hello!"))
+		}))
+		tst := httptest.NewServer(handler)
+		res, err := tst.Client().Get(tst.URL)
+		tst.Close()
+		if err != nil {
+			t.Errorf("#%d unexpected err: %v", i, err)
+			continue
+		}
+		// Match headers
+		for wantKey, wantValues := range tt.want {
+			gotValues := res.Header[wantKey]
+			if !reflect.DeepEqual(gotValues, wantValues) {
+				t.Errorf("#%d: key: %v\ngotHeader: %#v\nwantHeader:%#v", i, wantKey, gotValues, wantValues)
+			}
+		}
+	}
 }
