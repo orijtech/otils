@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -70,6 +71,9 @@ func ToURLValues(v interface{}) (url.Values, error) {
 		}
 
 		fieldTyp := typ.Field(i)
+		if unexportedField(fieldTyp.Name) {
+			continue
+		}
 
 		parentTag, omitempty, ignore := jsonTag(fieldTyp)
 		if ignore {
@@ -110,12 +114,14 @@ func ToURLValues(v interface{}) (url.Values, error) {
 			for i := 0; i < n; i++ {
 				ffield := fieldVal.Field(i)
 				fTyp := typ.Field(i)
+				if unexportedField(fTyp.Name) {
+					continue
+				}
 				tag, omitempty, ignore := jsonTag(fTyp)
 				if ignore {
 					continue
 				}
 				keyname := strings.Join([]string{parentTag, tag}, ".")
-
 				fIface := ffield.Interface()
 				innerValueMap, err := ToURLValues(fIface)
 				if err == nil && innerValueMap == nil {
@@ -284,6 +290,18 @@ func FirstNonEmptyString(args ...string) string {
 		}
 	}
 	return ""
+}
+
+func NonEmptyStrings(args ...string) (nonEmpties []string) {
+	for _, arg := range args {
+		if arg == "" {
+			continue
+		}
+		if strings.TrimSpace(arg) != "" {
+			nonEmpties = append(nonEmpties, arg)
+		}
+	}
+	return nonEmpties
 }
 
 type CodedError struct {
@@ -478,4 +496,21 @@ func (c *CORS) setCORSForResponseWriter(rw http.ResponseWriter) {
 	for _, hdr := range c.Headers {
 		rw.Header().Add("Access-Control-Allow-Headers", hdr)
 	}
+}
+
+func EnvOrAlternates(envVar string, alternates ...string) string {
+	if retr := strings.TrimSpace(os.Getenv(envVar)); retr != "" {
+		return retr
+	}
+	for _, alt := range alternates {
+		alt = strings.TrimSpace(alt)
+		if alt != "" {
+			return alt
+		}
+	}
+	return ""
+}
+
+func unexportedField(name string) bool {
+	return len(name) > 0 && name[0] >= 'a' && name[0] <= 'z'
 }
