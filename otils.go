@@ -514,3 +514,15 @@ func EnvOrAlternates(envVar string, alternates ...string) string {
 func unexportedField(name string) bool {
 	return len(name) > 0 && name[0] >= 'a' && name[0] <= 'z'
 }
+
+func UniqStrings(strs ...string) []string {
+	uniqs := make([]string, 0, len(strs))
+	seen := make(map[string]bool)
+	for _, str := range strs {
+		if _, ok := seen[str]; !ok {
+			seen[str] = true
+			uniqs = append(uniqs, str)
+		}
+	}
+	return uniqs
+}
