@@ -448,6 +448,12 @@ type CORS struct {
 	Methods []string
 	Headers []string
 
+	// AllowCredentials when set signifies that the header
+	// "Access-Control-Allow-Credentials" which will allow
+	// the possibility of the frontend XHR's withCredentials=true
+	// to be set.
+	AllowCredentials bool
+
 	next http.Handler
 }
 
@@ -465,6 +471,8 @@ var allInclusiveCORS = &CORS{
 	Origins: []string{"*"},
 	Methods: []string{"*"},
 	Headers: []string{"*"},
+
+	AllowCredentials: true,
 }
 
 // CORSMiddlewareAllInclusive is a convenience helper that uses the
@@ -472,6 +480,7 @@ var allInclusiveCORS = &CORS{
 // Access-Control-Allow-Origin: *
 // Access-Control-Allow-Methods: *
 // Access-Control-Allow-Headers: *
+// Access-Control-Allow-Credentials: *
 // thus enabling all origins, all methods and all headers.
 func CORSMiddlewareAllInclusive(next http.Handler) http.Handler {
 	return CORSMiddleware(allInclusiveCORS, next)
@@ -495,6 +504,9 @@ func (c *CORS) setCORSForResponseWriter(rw http.ResponseWriter) {
 	}
 	for _, hdr := range c.Headers {
 		rw.Header().Add("Access-Control-Allow-Headers", hdr)
+	}
+	if c.AllowCredentials {
+		rw.Header().Add("Access-Control-Allow-Credentials", "true")
 	}
 }
 
