@@ -2,12 +2,14 @@ package otils
 
 import "strings"
 
+// UniqStrings returns a slice contains unique element
+// from given input strings.
 func UniqStrings(strs ...string) []string {
 	uniqs := make([]string, 0, len(strs))
-	seen := make(map[string]bool)
+	seen := make(map[string]struct{})
 	for _, str := range strs {
 		if _, ok := seen[str]; !ok {
-			seen[str] = true
+			seen[str] = struct{}{}
 			uniqs = append(uniqs, str)
 		}
 	}
