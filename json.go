@@ -19,14 +19,14 @@ func (ns *NullableString) UnmarshalJSON(b []byte) error {
 	str := string(b)
 	// Special case when we encounter `null`, modify it to the empty string
 	if str == "null" || str == "" {
-		str = ""
-	} else {
-		unquoted, err := strconv.Unquote(str)
-		if err != nil {
-			return err
-		}
-		*ns = NullableString(unquoted)
+		*ns = ""
+		return nil
 	}
+	unquoted, err := strconv.Unquote(str)
+	if err != nil {
+		return err
+	}
+	*ns = NullableString(unquoted)
 
 	return nil
 }
@@ -105,7 +105,6 @@ func (nt *NullableTime) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	if ns == "" {
-		nt = nil
 		return nil
 	}
 
