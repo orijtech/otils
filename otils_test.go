@@ -338,7 +338,7 @@ func TestCORSMiddleware(t *testing.T) {
 
 	for i, tt := range tests {
 		handler := otils.CORSMiddleware(tt.cors, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("Hello!"))
+			_, _ = w.Write([]byte("Hello!"))
 		}))
 		tst := httptest.NewServer(handler)
 		res, err := tst.Client().Get(tst.URL)
