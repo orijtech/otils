@@ -63,7 +63,7 @@ func initCorpus(corpusDir, output string) {
 			log.Fatal(fmt.Errorf("failed to create zip entry %q to %q: %w", entry.Name(), output, err))
 		}
 		if _, err := io.Copy(w, bytes.NewReader(ossDatum)); err != nil {
-			log.Fatalf("can't write zip entry %q in %q: %w", entry.Name(), output, err)
+			log.Fatal(fmt.Errorf("can't write zip entry %q in %q: %w", entry.Name(), output, err))
 		}
 
 		log.Printf("added %q", filename)
